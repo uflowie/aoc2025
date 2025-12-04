@@ -9,39 +9,33 @@ pub fn part_two(input: &str) -> Option<u64> {
 }
 
 fn solve(input: &str, num_batteries: u64) -> u64 {
-    let total_joltage = input
+    let slots = num_batteries as usize;
+
+    input
         .lines()
-        .map(|mut bank| {
-            let mut max_voltage = 0;
-
-            for i in 0..num_batteries {
-                let (ch, rem) = find_largest_digit_that_fits(bank, (num_batteries - i) as usize);
-                bank = rem;
-                max_voltage += (ch.to_digit(10).unwrap() as u64)
-                    * 10_u64.pow((num_batteries - i - 1).try_into().unwrap())
-            }
-
-            max_voltage
-        })
-        .sum();
-
-    total_joltage
+        .map(|bank| max_voltage(bank.as_bytes(), slots))
+        .sum()
 }
 
-fn find_largest_digit_that_fits(input: &str, digits_after: usize) -> (char, &str) {
-    let (max_idx, max_ch) = input
-        .bytes()
-        .take(input.len() - digits_after + 1)
-        .enumerate()
-        .fold((0, b'0'), |(best_idx, best_ch), (idx, ch)| {
-            if ch > best_ch {
-                (idx, ch)
-            } else {
-                (best_idx, best_ch)
-            }
-        });
+fn max_voltage(bank: &[u8], mut slots: usize) -> u64 {
+    let mut start = 0;
+    let mut value = 0;
 
-    (max_ch as char, &input[max_idx + 1..])
+    while slots > 0 {
+        let end = bank.len() - slots + 1;
+        let (idx, digit) = bank[start..end]
+            .iter()
+            .copied()
+            .enumerate()
+            .max_by_key(|&(_, b)| b)
+            .unwrap();
+
+        value = value * 10 + (digit - b'0') as u64;
+        start += idx + 1;
+        slots -= 1;
+    }
+
+    value
 }
 
 #[cfg(test)]
