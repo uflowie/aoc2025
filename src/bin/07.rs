@@ -4,8 +4,6 @@ use advent_of_code::indexed_chars;
 
 advent_of_code::solution!(7);
 
-type Beam = (i32, i32);
-
 pub fn part_one(input: &str) -> Option<usize> {
     let grid = indexed_chars(input);
 

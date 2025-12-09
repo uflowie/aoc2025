@@ -21,7 +21,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    let (ranges, ids) = input.split_once("\n\n").unwrap();
+    let (ranges, _) = input.split_once("\n\n").unwrap();
 
     let mut ranges = ranges
         .lines()

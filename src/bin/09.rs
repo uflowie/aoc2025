@@ -78,13 +78,13 @@ fn rectangle_consists_of_red_and_green_tiles_only(
     horizontal_sides
         .iter()
         .cartesian_product(vertical_edges.iter())
-        .all(|(((x1, y1), (x2, y2)), ((x3, y3), (x4, y4)))| {
+        .all(|(((x1, y1), (x2, _)), ((x3, y3), (_, y4)))| {
             !strictly_between(*x1, *x2, *x3) || !strictly_between(*y3, *y4, *y1)
         })
         && vertical_sides
             .iter()
             .cartesian_product(horizontal_edges.iter())
-            .all(|(((x1, y1), (x2, y2)), ((x3, y3), (x4, y4)))| {
+            .all(|(((x1, y1), (_, y2)), ((x3, y3), (x4, _)))| {
                 !strictly_between(*y1, *y2, *y3) || !strictly_between(*x3, *x4, *x1)
             })
 }
