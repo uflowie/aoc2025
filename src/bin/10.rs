@@ -1,5 +1,7 @@
 use std::collections::{HashSet, VecDeque};
 
+use z3::{Optimize, ast::Int};
+
 advent_of_code::solution!(10);
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -56,35 +58,44 @@ impl Machine {
         depth
     }
 
-
     fn solve_joltage(&self) -> u32 {
-        println!("solving joltage");
-        let initial_joltage = self.target_joltage.initial_state();
-        let mut seen = HashSet::from([initial_joltage.clone()]);
+        let optimizer = Optimize::new();
 
-        let mut queue = VecDeque::from([initial_joltage]);
-        let mut depth = 0;
+        let presses_per_button: Vec<_> = self
+            .buttons
+            .iter()
+            .enumerate()
+            .map(|(i, _)| Int::fresh_const(&format!("presses_{}", i)))
+            .collect();
 
-        while !queue.is_empty() {
-            if queue.iter().any(|l| *l == self.target_joltage) {
-                break;
-            }
-            depth += 1;
-            let states: Vec<_> = queue.drain(..).collect();
-            for state in states {
-                let new_states: Vec<_> = self
-                    .buttons
-                    .iter()
-                    .map(|b| state.press_button(b))
-                    .filter(|x| !seen.contains(x))
-                    .filter(|x| x.target_is_still_reachable(&self.target_joltage))
-                    .collect();
-                seen.extend(new_states.clone());
-                queue.extend(new_states);
+        let mut joltages: Vec<_> = self
+            .target_joltage
+            .0
+            .iter()
+            .map(|_| Int::from_i64(0))
+            .collect();
+
+        for (i, button) in self.buttons.iter().enumerate() {
+            for j in button {
+                joltages[*j] = &joltages[*j] + &presses_per_button[i];
             }
         }
 
-        depth
+        for presses in &presses_per_button {
+            optimizer.assert(&presses.ge(0));
+        }
+
+        for (i, joltage) in joltages.iter().enumerate() {
+            optimizer.assert(&joltage.eq(self.target_joltage.0[i] as u32));
+        }
+
+        let sum_presses = Int::add(&presses_per_button);
+
+        optimizer.minimize(&sum_presses);
+
+        optimizer.check(&[]);
+        let model = optimizer.get_model().unwrap();
+        model.eval(&sum_presses, true).unwrap().as_u64().unwrap() as u32
     }
 }
 
@@ -154,28 +165,8 @@ impl LightDiagram {
     }
 }
 
-#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+#[derive(Debug)]
 struct JoltageRequirements(Vec<usize>);
-
-impl JoltageRequirements {
-    fn press_button(&self, button: &[usize]) -> Self {
-        let mut reqs = self.0.clone();
-
-        for i in button {
-            reqs[*i] += 1;
-        }
-
-        Self(reqs)
-    }
-
-    fn initial_state(&self) -> Self {
-        Self(vec![0; self.0.len()])
-    }
-
-    fn target_is_still_reachable(&self, other: &Self) -> bool {
-        self.0.iter().zip(other.0.iter()).all(|(a, b)| a <= b)
-    }
-}
 
 #[cfg(test)]
 mod tests {
